@@ -29,20 +29,17 @@ class WebTransfer(object):
                                 self.log(line)
 				if re.search('jpg', line):
 					l = line.split('/')
-					t = l[2].lstrip('se_').rstrip('.jpg\n')
-					t = time.strptime(t, "%Y%m%d_%H%M%S_%f")
-					t = time.mktime(t)
-					if (time.time()- t) < 120:
-						self.upload(line)
+					#t = l[2].lstrip('se_').rstrip('.jpg\n')
+					#t = time.strptime(t, "%Y%m%d_%H%M%S_%f")
+					#t = time.mktime(t)
+					#if (time.time()- t) < 120:
+					self.upload(line)
 					
                         if not line:
                                 break
 
 	def upload(self,line):
-		if re.search('se_',line):
-			name = 'se.jpg'
-		if re.search('s_',line):
-			name = 's.jpg'
+		print line
 		cmd = os.path.join(self.dir, line.rstrip('\n'))
 		print cmd
 		os.system('scp %s ovid:public_html/MRO/%s' % (cmd, name))
