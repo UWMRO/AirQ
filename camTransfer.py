@@ -12,7 +12,7 @@ class WebTransfer(object):
 
 	def __init__(self):
 		self.dir = '/home/mro/Pictures/Picture/'
-		self.delay = 30
+		self.delay = 60
 		self.se_current = 0
 		
 	def run(self):
@@ -28,23 +28,25 @@ class WebTransfer(object):
                         if line:
                                 self.log(line)
 				if re.search('jpg', line):
+					"""self.log(("found: " + str(line) +'\n'))
 					l = line.split('/')
-					t = l[2].lstrip('se_').rstrip('.jpg\n')
+					t = l[2].lstrip('se_').lstrip('s_').rstrip('.jpg\n')
 					t = time.strptime(t, "%Y%m%d_%H%M%S_%f")
 					t = time.mktime(t)
-					if (time.time()- t) < 120:
-						self.upload(line)
+					print t, time.time(), l
+					if (time.time()- t) < 4000:"""
+					self.upload(line.rstrip('\n'))
 					
                         if not line:
                                 break
 
 	def upload(self,line):
-		if re.search('se_',line):
-			name = 'se.jpg'
-		if re.search('s_',line):
-			name = 's.jpg'
+		l = line.split('/')
+		name = l[(len(l)-1)].split('_')[0]+".jpg"
 		cmd = os.path.join(self.dir, line.rstrip('\n'))
-		print cmd
+		self.log(("uploading: " + str(cmd)))
+		print cmd, name
+
 		os.system('scp %s ovid:public_html/MRO/%s' % (cmd, name))
 		return
 	
