@@ -1,3 +1,13 @@
+"""
+webcam_handler.py
+
+Used to manage the stream of security camera images
+by cleaning up the naming protocol and transferring
+the images to a storage directory and a live display
+directory. The live images are automatically synced
+with a remote server that hostss the latest imagery.
+"""
+
 import os, shutil, subprocess, glob, time, sys
 from datetime import datetime
 
@@ -54,7 +64,11 @@ class WebcamHandler(object):
         # Sort the images, make a list of all cameras and files
         for j in range(len(listLatest)):
             fileName = listLatest[j]
-            camNum, camDate, camTime = fileName.split('_')
+            try:
+                camNum, camDate, camTime = fileName.split('_')
+            except Exception as e:
+                print "Error: %s. invalid file: %s" %(str(e),fileName)
+                continue
             if camNum not in camList:
                 camList.append(camNum)
             camTime = camTime.split('.')[0]
