@@ -1,6 +1,5 @@
 """
 webcam_handler.py
-
 Used to manage the stream of security camera images
 by cleaning up the naming protocol and transferring
 the images to a storage directory and a live display
@@ -15,9 +14,12 @@ from datetime import datetime
 class WebcamHandler(object):
 
     def __init__(self):
-        self.storagePath = str(os.getcwd())+"/Webcams/Storage/"
-        self.inboxPath = str(os.getcwd())+"/security-cameras/"
-        self.livePath = str(os.getcwd())+"/Webcams/Live/"
+        self.storagePath = str(os.getcwd())+"/Storage/"             #Local machine sorted image storage path
+        self.inboxPath = str(os.getcwd())+"/security-cameras/"      #Local machine raw image path
+        self.livePath = str(os.getcwd())+"/Live/"                   #Local machine live storage path
+        self.remotePath = 'ovid:public_html/webcams/'               #Remote server storage path
+        self.uploadInt = 5		                                    #Minutes between image upload to server
+        self.uploadCount = 0	                                    #Counter for uploadInt timer
 
     def sortFiles(self):
         fileList = []
@@ -33,18 +35,22 @@ class WebcamHandler(object):
             #print('Found directory: %s' % dirName)
             #print('subdirlist: %s' % subdirList)
             for fname in files:
-                try:
-                    pathName = os.path.join(dirName, fname)
-                    fileList.append(pathName)
-                    fcam, fdate, ftime, fjunk = fname.split("_")
-                    newFName = fcam+'_'+fdate+'_'+ftime+'.jpg'
-                    shutil.copy(pathName, self.storagePath+fdate+"/"+newFName)
-                    os.remove(pathName)
-                    print('Moved %s to Storage' %newFName)
-                except Exception as e:
-                    print e
-                    print "File error: %s" %fname
-        return
+                if str(fname).endswith('.jpg'):
+                    try:
+                        pathName = os.path.join(dirName, fname)
+                        fileList.append(pathName)
+                        fcam, fdate, ftime, fjunk = fname.split("_")
+                        newFName = fcam+'_'+fdate+'_'+ftime+'.jpg'
+                        shutil.copy(pathName, self.storagePath+fdate+"/"+newFName)
+                        os.remove(pathName)
+                        print('Moved %s to Storage' %newFName)
+                    except Exception as e:
+                        print e
+                        print "File error: %s" %fname
+                else:
+                    print "Removing %s" %fname
+                    os.remove(os.path.join(dirName, fname))
+            return
 
     def findNow(self):
         now = datetime.now()
@@ -107,8 +113,17 @@ class WebcamHandler(object):
             os.chmod(self.livePath+str(key3)+'.jpg', 0755)
             print "Copied "+camLatest[str(key3)]+" to Live"
 
-        subprocess.Popen(['rsync -azrh --progress '+self.livePath+' ovid:public_html/'], stdout=subprocess.PIPE, shell=True)
-        return
+        #Upload latest files to remote server, print rsync output and error, reset upload counter
+        self.uploadCount = self.uploadCount + 1
+        print str(self.uploadInt-self.uploadCount)+' minutes until next upload to remote server'
+        if self.uploadCount >= self.uploadInt:
+            print "Uploading latest images to remote server"
+            p = subprocess.Popen(['rsync -azrh --progress %s %s' %(self.livePath, self.remotePath)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            stdout, stderr = p.communicate()
+            print stdout
+            print stderr
+            self.uploadCount = 0
+	return
 if __name__ == "__main__":
     wh = WebcamHandler()
 
@@ -125,5 +140,3 @@ if __name__ == "__main__":
             sys.stdout.flush()
             time.sleep(1)
         print '\r\n'
-
-        
