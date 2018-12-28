@@ -1,10 +1,9 @@
 """
 webcam_handler.py
-Used to manage the stream of security camera images
-by cleaning up the naming protocol and transferring
-the images to a storage directory and a live display
-directory. The live images are automatically synced
-with a remote server that hostss the latest imagery.
+Original by Matt (~'17-'18), modified for direct links to webcams by OJF '19
+
+Requests security camera images, archives them, and forwards the latest to 
+remote server.
 """
 
 import os, shutil, subprocess, glob, time, sys
@@ -22,6 +21,10 @@ class WebcamHandler(object):
         self.uploadCount = 0	                                    #Counter for uploadInt timer
 
     def sortFiles(self):
+        """
+        Create daily folder in archive, sort all jpg's that appear in inbox 
+        into latest folder with a cleaned up name (cam_date_time.jpg)
+        """
         fileList = []
         print('Starting File Search')
         # Set the directory you want to start from
@@ -53,6 +56,11 @@ class WebcamHandler(object):
             return
 
     def findNow(self):
+        """ 
+        Search storage path for images, use naming convention to find cameras,
+        then the lastest image for each, which get moved to live directory,
+        then upload contents of live directory to remote server.
+        """
         now = datetime.now()
         dateStr = now.strftime("%Y%m%d")
         listFolders = os.listdir(self.storagePath)
@@ -124,6 +132,8 @@ class WebcamHandler(object):
             print stderr
             self.uploadCount = 0
 	return
+
+    
 if __name__ == "__main__":
     wh = WebcamHandler()
 
