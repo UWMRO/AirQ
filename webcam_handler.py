@@ -1,25 +1,84 @@
-"""
-webcam_handler.py
-Original by Matt (~'17-'18), modified for direct links to webcams by OJF '19
+""" webcam_handler.py
+Requests security camera images, archives them, and forwards the latest to remote server. 
+Naming convention assumes images come in slower than once per second.
 
-Requests security camera images, archives them, and forwards the latest to 
-remote server.
+Original by Matt Armstrong (~'17-'18), modified for direct links to webcams by OJF '19
+
+goals:
+names changes:
+  storage -> archive
+  inbox -> not used?
+  livepath -> remove
+replace subprocess rsync w/ library?
+
+Subprocess([curl... could be replaced with PycURL (default package) or requests (HTTP for Humans)
 """
 
 import os, shutil, subprocess, glob, time, sys
+import pycurl
 from datetime import datetime
 
 
-class WebcamHandler(object):
+class WebCamHandler(object):
+    """ Retrieve, and post images to remote server from the MRO webcams, run prep_Archive first to organize retrieved images. """
 
     def __init__(self):
-        self.storagePath = str(os.getcwd())+"/Storage/"             #Local machine sorted image storage path
-        self.inboxPath = str(os.getcwd())+"/security-cameras/"      #Local machine raw image path
-        self.livePath = str(os.getcwd())+"/Live/"                   #Local machine live storage path
-        self.remotePath = 'ovid:public_html/webcams/'               #Remote server storage path
-        self.uploadInt = 5		                                    #Minutes between image upload to server
-        self.uploadCount = 0	                                    #Counter for uploadInt timer
+        ## remove these...
+        #Local machine sorted image storage path
+        self.storagePath = str(os.getcwd())+"/Storage/"
+        #Local machine raw image path
+        self.inboxPath = str(os.getcwd())+"/security-cameras/"
+        #Local machine live storage path
+        self.livePath = str(os.getcwd())+"/Live/"
+        #Minutes between image upload to server
+        self.uploadInt = 5
+        #Counter for uploadInt timer
+        self.uploadCount = 0	                                    
 
+        # new variables
+        self.archivePath = str(os.getcwd())+"/Archive/"
+        self.archivePath = "/Users/ojf/Downloads/"
+        self.remotePath = 'ovid:public_html/webcams/'
+
+
+    def prepare_archive(self):
+        """ Create daily folder in archive, returns path. """
+
+        todaysPath = self.archivePath + datetime.now().strftime("%Y%m%d")
+
+        if os.path.exists( todaysPath + "/" ) == False:
+            try:
+                os.mkdir( todaysPath )
+            except Exception as e:
+                print "Error creating ", todaysPath, ": ", e
+        return todaysPath
+
+
+    def save_image(self, savePath):
+        """ Saves current image, returns full path to new image.
+        
+        retrieves image http://IPAddress/image/jpeg.cgi
+        """
+        # I've hardcoded using just the first element of the keys() for now
+        imagePath = savePath + "/" + camDict.keys()[0] + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
+        with open(imagePath, 'wb') as f:
+            c = pycurl.Curl()
+            c.setopt( c.URL, self.IPDict[cam] )
+            c.setopt( c.USERPWD, self.userNameDict[cam]+":"+self.pwdDict[cam] )
+            c.setopt( c.WRITEDATA, f )
+            c.perform()
+            c.close()
+            
+        return imagePath
+
+    
+    def post_image(self, imagePath):
+        """ Push image to remote server. """
+        # can use pycurl now?!? =)
+        # curl -
+        return
+
+        
     def sortFiles(self):
         """
         Create daily folder in archive, sort all jpg's that appear in inbox 
@@ -135,16 +194,18 @@ class WebcamHandler(object):
 
     
 if __name__ == "__main__":
-    wh = WebcamHandler()
+    
+    wh = WebCamHandler()
 
     run = True
     while run == True:
         try:
-            wh.sortFiles()
-            wh.findNow()
+            path = wh.prepare_archive()
+            latestImage = wh.save_image(camDict, path)
+            print latestImage
         except Exception as e:
             print e
-        for i in xrange(60,-1,-1):
+        for i in xrange(6,-1,-1):
             sys.stdout.write('\r')
             sys.stdout.write('Sleeping: %02d seconds remaining' %i)
             sys.stdout.flush()
