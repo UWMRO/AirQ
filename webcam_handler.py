@@ -4,79 +4,98 @@ Naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18), modified for direct links to webcams by OJF '19
 
-goals:
-names changes:
-  storage -> archive
-  inbox -> not used?
-  livepath -> remove
-replace subprocess rsync w/ library?
-
 Subprocess([curl... could be replaced with PycURL (default package) or requests (HTTP for Humans)
+Exceptions in objects should pass up their problem, not print...
 """
 
 import os, shutil, subprocess, glob, time, sys
 import pycurl
 from datetime import datetime
 
+class WebCam:
+    """ Object to represent one of the security cameras at MRO """
+
+    def __init__(self, name, URL, userName, password):
+        self.name = name
+        self.URL = URL
+        self.userName = userName
+        self.password = password
+        self.lastImage = None
+        
+
+    def save_image(self, savePath):
+        """ Uses http://IPAddress/image/jpeg.cgi to request current image, returns full path to new image. """
+
+        imagePath = savePath + "/" + self.name + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
+        with open(imagePath, 'wb') as f:
+            c = pycurl.Curl()
+            c.setopt( c.URL, self.URL + "/image/jpeg.cgi" )
+            c.setopt( c.USERPWD, self.userName + ":" + self.password )
+            c.setopt( c.WRITEDATA, f )
+            try:
+                c.perform()
+            except:
+                print "Error retrieving image from", self.name
+            else:
+                self.lastImage = imagePath
+            c.close()
+
+    
 
 class WebCamHandler(object):
-    """ Retrieve, and post images to remote server from the MRO webcams, run prep_Archive first to organize retrieved images. """
+    """ Archive and post images to remote server from the MRO webcams.
+
+    Sets up WebCam objects based on a file of format,
+
+      name IP username password
+    """
 
     def __init__(self):
-        ## remove these...
-        #Local machine sorted image storage path
-        self.storagePath = str(os.getcwd())+"/Storage/"
-        #Local machine raw image path
-        self.inboxPath = str(os.getcwd())+"/security-cameras/"
-        #Local machine live storage path
-        self.livePath = str(os.getcwd())+"/Live/"
+        ## necessary?
         #Minutes between image upload to server
         self.uploadInt = 5
         #Counter for uploadInt timer
         self.uploadCount = 0	                                    
 
-        # new variables
+
+        webcam_definition_file = "webcams.txt"
+        
         self.archivePath = str(os.getcwd())+"/Archive/"
         self.archivePath = "/Users/ojf/Downloads/"
         self.remotePath = 'ovid:public_html/webcams/'
+        self.remotePath = './'
+
+        self.cameras = []  # list of all WebCam objects
+        FILE = open(webcam_definition_file)
+        for line in FILE:
+            if line[0] == '#':
+                continue
+            self.cameras.append( WebCam(*line.split()) ) # *args "unwraps" the list from split()
+        print "Setting up cameras:"
+        for camera in self.cameras:
+            print camera.name
 
 
-    def prepare_archive(self):
-        """ Create daily folder in archive, returns path. """
-
-        todaysPath = self.archivePath + datetime.now().strftime("%Y%m%d")
-
-        if os.path.exists( todaysPath + "/" ) == False:
-            try:
-                os.mkdir( todaysPath )
-            except Exception as e:
-                print "Error creating ", todaysPath, ": ", e
-        return todaysPath
-
-
-    def save_image(self, savePath):
-        """ Saves current image, returns full path to new image.
-        
-        retrieves image http://IPAddress/image/jpeg.cgi
+    def retrieve_images(self):
+        """ Check for correct daily folder in archive, then save an image from each camera
         """
-        # I've hardcoded using just the first element of the keys() for now
-        imagePath = savePath + "/" + camDict.keys()[0] + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
-        with open(imagePath, 'wb') as f:
-            c = pycurl.Curl()
-            c.setopt( c.URL, self.IPDict[cam] )
-            c.setopt( c.USERPWD, self.userNameDict[cam]+":"+self.pwdDict[cam] )
-            c.setopt( c.WRITEDATA, f )
-            c.perform()
-            c.close()
-            
-        return imagePath
+        path = self.archivePath + datetime.now().strftime("%Y%m%d")
 
-    
-    def post_image(self, imagePath):
+        if os.path.exists( path + "/" ) == False:
+            try:
+                os.mkdir( path )
+            except Exception as e:
+                print "Error creating ", path, ": ", e
+
+        for camera in self.cameras:
+                camera.save_image(path)
+
+
+    def post_images(self):
         """ Push image to remote server. """
-        # can use pycurl now?!? =)
-        # curl -
-        return
+        for camera in self.cameras:
+            if camera.lastImage:
+                shutil.copy(camera.lastImage, self.remotePath + camera.name + ".jpg")
 
         
     def sortFiles(self):
@@ -200,12 +219,15 @@ if __name__ == "__main__":
     run = True
     while run == True:
         try:
-            path = wh.prepare_archive()
-            latestImage = wh.save_image(camDict, path)
-            print latestImage
+            wh.retrieve_images()
         except Exception as e:
             print e
-        for i in xrange(6,-1,-1):
+        try:
+            wh.post_images()
+        except Exception as e:
+            print e
+
+        for i in xrange(60,-1,-1):
             sys.stdout.write('\r')
             sys.stdout.write('Sleeping: %02d seconds remaining' %i)
             sys.stdout.flush()
