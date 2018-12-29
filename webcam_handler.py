@@ -2,7 +2,7 @@
 Requests security camera images, archives them, and forwards the latest to remote server. 
 Naming convention assumes images come in slower than once per second.
 
-Original by Matt Armstrong (~'17-'18), modified for direct links to webcams by OJF '19
+Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
 
 Subprocess([curl... could be replaced with PycURL (default package) or requests (HTTP for Humans)
 Exceptions in objects should pass up their problem, not print...
@@ -71,9 +71,8 @@ class WebCamHandler(object):
             if line[0] == '#':
                 continue
             self.cameras.append( WebCam(*line.split()) ) # *args "unwraps" the list from split()
-        print "Setting up cameras:"
         for camera in self.cameras:
-            print camera.name
+            print "Setting up camera", camera.name
 
 
     def retrieve_images(self):
@@ -88,14 +87,17 @@ class WebCamHandler(object):
                 print "Error creating ", path, ": ", e
 
         for camera in self.cameras:
-                camera.save_image(path)
-
+            camera.save_image(path)
+            print "image archived from ", camera.name
+            
+            
 
     def post_images(self):
         """ Push image to remote server. """
         for camera in self.cameras:
             if camera.lastImage:
                 shutil.copy(camera.lastImage, self.remotePath + camera.name + ".jpg")
+                print "Posted image from", camera.name
 
         
     def sortFiles(self):
@@ -227,7 +229,7 @@ if __name__ == "__main__":
         except Exception as e:
             print e
 
-        for i in xrange(60,-1,-1):
+        for i in xrange(300,-1,-1):
             sys.stdout.write('\r')
             sys.stdout.write('Sleeping: %02d seconds remaining' %i)
             sys.stdout.flush()
