@@ -11,7 +11,7 @@ Exceptions in objects should pass up their problem, not print...
 
 import os, shutil, subprocess, glob, time, sys
 import pycurl # retrieve
-# import paramiko # sftp
+import paramiko # sftp
 from datetime import datetime
 
 class WebCam:
@@ -56,10 +56,9 @@ class WebCamHandler(object):
         webcam_definition_file = "webcams.txt"
         
         self.archivePath = str(os.getcwd())+"/Archive/"
-        self.archivePath = "/Users/ojf/Downloads/"
+        self.archivePath = "/home/ojf/Pictures/MRO_Webcams/"
         self.remoteHost = 'ovid.u.washington.edu'
         self.remotePath = 'public_html/webcams/'
-        self.remotePath = './'
         self.remotePort = 22
 
         self.cameras = []  # list of all WebCam objects
