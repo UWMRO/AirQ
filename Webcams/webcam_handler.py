@@ -4,9 +4,7 @@ Naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
 
-Modify post_images for using paramiko to send images over ssh
-
-Exceptions in objects should pass up their problem, not print...
+To-Do: Exceptions in objects should pass up their problem, not print...
 """
 
 import os, shutil, subprocess, glob, time, sys
