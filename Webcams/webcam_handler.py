@@ -55,6 +55,7 @@ class WebCamHandler(object):
         
         self.archivePath = str(os.getcwd())+"/Archive/"
         self.archivePath = "/home/ojf/Pictures/MRO_Webcams/"
+        self.archivePath = "/Users/ojf/Downloads/"
         self.remoteHost = 'ovid.u.washington.edu'
         self.remotePath = 'public_html/webcams/'
         self.remotePort = 22
@@ -88,7 +89,7 @@ class WebCamHandler(object):
     def post_images(self):
         """ Push images to remote server. """
         transport = paramiko.Transport((self.remoteHost, self.remotePort))
-        transport.connect(username = 'mrouser', password = 'squirrel5tar')
+        transport.connect(username = 'user', password = 'password')
 
         sftp = paramiko.SFTPClient.from_transport(transport)
         for camera in self.cameras:
