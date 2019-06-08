@@ -5,10 +5,36 @@
  * LED Status:
  * Blinks blue while attempting wifi connection
  * Red while trying to connect to mqtt server 
+ * off while fan runs (but pin 13's LED will be on)
  * Both on for dust 1 reading
  * Blue only for dust 2 reading
- * Red on while ready and waiting...
+ * Red on while ready and waiting for WAIT_TIME or button press
 */
+
+// Timing
+#define FAN_TIME 30     // fan runtime in seconds
+#define SAMPLE_TIME 120  // time in seconds each sensor integrates for
+#define WAIT_TIME 600   // time between samples
+
+// WiFi parameters
+#define WLAN_SSID       "University of Washington"
+#define WLAN_PASS       ""
+
+// Pin Definitions
+#define BUTTONPIN 21    // momentary switch (button)
+// LED pins
+#define BLUEPIN 14      // Blue LED
+#define REDPIN 32       // Red LED
+#define DHTPIN 15       // Temp/Humidity
+#define DUST1PIN 27     // Dust Sensor #1
+#define DUST2PIN 33     // Dust Sensor #2
+#define FANPIN 13       // Fan (use pin 13 due to integrated LED)
+
+// Adafruit IO
+#define AIO_SERVER      "io.adafruit.com"
+#define AIO_SERVERPORT  1883
+#define AIO_USERNAME    "ltsiang"
+#define AIO_KEY         "a0949d9c814146789aa8245b0e6f4204"  // Obtained from account info on io.adafruit.com
 
 #include <Bounce2.h>  // debounce library 
 //#include "DHT.h"
@@ -17,46 +43,25 @@
 #include "Adafruit_MQTT_Client.h"
 void mqtt_connect();
 
-// WiFi parameters
-#define WLAN_SSID       "University of Washington"
-#define WLAN_PASS       ""
-
-// Adafruit IO
-#define AIO_SERVER      "io.adafruit.com"
-#define AIO_SERVERPORT  1883
-#define AIO_USERNAME    "ltsiang"
-#define AIO_KEY         "a0949d9c814146789aa8245b0e6f4204"  // Obtained from account info on io.adafruit.com
-
-// Pin Definitions
-#define BUTTONPIN 21    // momentary switch (button)
-// LED pins
-#define BLUEPIN 32      // Blue LED
-#define REDPIN 14       // Red LED
-#define DHTPIN 15       // Temp/Humidity
-#define DUST1PIN 27     // Dust Sensor #1
-#define DUST2PIN 33     // Dust Sensor #2
-#define FANPIN 13       // Fan 
-
-bool DEMO = false;
 
 class Grove_Dust_Sensor
 {
-  /* 
-   * Default sample time is 30 seconds
-   */
+  // Default sample time is 30 seconds
   public:
-    unsigned long duration;
     unsigned long sampletime;
-    unsigned long lowpulseoccupancy;
-    float ratio;
-    float concentration;
     
   Grove_Dust_Sensor(int Pin) {
     _pin = Pin;
     pinMode(Pin, INPUT);
   }
 
-  float Sample(unsigned long sampletime = 30) {
+  float Sample(unsigned long sampletime_default = 30) {
+    unsigned long duration;
+    unsigned long lowpulseoccupancy;
+    float ratio;
+    float concentration;
+
+    sampletime = sampletime_default;
     // first convert sample time from seconds to ms
     unsigned long sampletime_ms = 1000 * sampletime;
     lowpulseoccupancy = 0;
@@ -81,14 +86,12 @@ class Grove_Dust_Sensor
 
 // Object Creation
 Bounce Button = Bounce();
-
 Grove_Dust_Sensor dust1(DUST1PIN); 
 Grove_Dust_Sensor dust2(DUST2PIN); 
-
 //DHT dht(DHTPIN, DHT22);
 
 // Create an WiFiClient class to connect to the MQTT server, then setup the MQTT
-//  client class by passing in the WiFi client and MQTT server and login details.
+// client class by passing in the WiFi client and MQTT server and login details.
 
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
@@ -118,7 +121,7 @@ void setup() {
 
   // Setup Temperature/Humidity sensor
   //dht.begin();
-
+  
   // blink blue LED while connecting to WiFi access point
   Serial.println(); Serial.println();
   delay(10);
@@ -130,7 +133,7 @@ void setup() {
     LED = !LED;
     digitalWrite(BLUEPIN, LED);   
     Serial.print(F("."));
-    delay(500);
+    delay(250);
   }
   // Success! Make sure blue is off
   digitalWrite(BLUEPIN, HIGH);     // off
@@ -154,46 +157,49 @@ void loop() {
 
   
   digitalWrite(FANPIN, HIGH);  // on
-  delay(20000);
+  delay(1000*FAN_TIME);
   digitalWrite(FANPIN, LOW);   // off 
 
   digitalWrite(REDPIN, LOW);    // on for Dust 1
   digitalWrite(BLUEPIN, LOW);    // on for Dust 1
 
-  unsigned long sampletime = 20;
-
   float concentration;
-  // dust 1
-  Serial.print(sampletime);
-  Serial.print(" sec sample from dust 1: ");
-  concentration = dust1.Sample(sampletime);
-  Serial.println(concentration);
+  // Dust 1
+  Serial.print("Dust 1: ");
+  concentration = dust1.Sample(SAMPLE_TIME);
+  Serial.print(concentration);
+  Serial.print(" (");
+  Serial.print(dust1.sampletime);
+  Serial.println(" second sample)");
+  
   dust1feed.publish(concentration);
 
   // red off, blue remains on for dust 2
   digitalWrite(REDPIN, HIGH);  
 
-  // dust 2
-  Serial.print(sampletime);
-  Serial.print(" sec sample from dust 2: ");
-  concentration = dust2.Sample(sampletime);
-  Serial.println(concentration);
+  // Dust 2
+  Serial.print("Dust 2: ");
+  concentration = dust2.Sample(SAMPLE_TIME);
+  Serial.print(concentration);
+  Serial.print(" (");
+  Serial.print(dust2.sampletime);
+  Serial.println(" second sample)");
   dust2feed.publish(concentration);
   digitalWrite(BLUEPIN, HIGH);    // off
 
   // ready, red on
   digitalWrite(REDPIN, LOW);  // on
 
-  // long delay, or button press
-
-  bool wait = true;
-  while ( wait ) {
+  // wait for WAIT_TIME, or till a button press
+  unsigned long start_ms = millis();
+  unsigned long wait_ms = 1000 * WAIT_TIME;
+  while ((millis()-start_ms) < wait_ms)
+  {
     Button.update();
     if ( Button.fell() ) {
-      wait = false;
+      break;
     }
   }
-
 }
 
 
