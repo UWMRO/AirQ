@@ -1,5 +1,5 @@
 /* Ling Tsiang and Oliver Fraser
- * Air Quality Sensor v1.9
+ * Air Quality Sensor v2.0
  * w/ thanks to example Adafruit MQTT code
  * 
  * LED Status:
