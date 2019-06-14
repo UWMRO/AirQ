@@ -9,7 +9,7 @@ To-Do: Exceptions in objects should pass up their problem, not print...
 
 import os, shutil, subprocess, glob, time, sys
 import pycurl # retrieve
-import paramiko # sftp
+from paramiko import SSHClient
 from datetime import datetime
 
 class WebCam:
@@ -53,14 +53,12 @@ class WebCamHandler(object):
     def __init__(self):
         webcam_definition_file = "webcams.txt"
         
-        self.archivePath = str(os.getcwd())+"/Archive/"
         self.archivePath = "/home/ojf/Pictures/MRO_Webcams/"
-        self.archivePath = "/Users/ojf/Downloads/"
-        self.remoteHost = 'ovid.u.washington.edu'
         self.remotePath = 'public_html/webcams/'
-        self.remotePort = 22
-
+        self.remoteHost = ''
+        self.user = ''
         self.cameras = []  # list of all WebCam objects
+
         FILE = open(webcam_definition_file)
         for line in FILE:
             if line[0] == '#':
@@ -88,16 +86,17 @@ class WebCamHandler(object):
 
     def post_images(self):
         """ Push images to remote server. """
-        transport = paramiko.Transport((self.remoteHost, self.remotePort))
-        transport.connect(username = 'user', password = 'password')
-
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect(self.remoteHost, username=self.user)
+        sftp = ssh.open_sftp()
+        
         for camera in self.cameras:
             if camera.lastImage:
                 sftp.put(camera.lastImage, self.remotePath + camera.name + ".jpg")
                 print "Posted image from", camera.name
         sftp.close()
-        transport.close()
+        ssh.close()
 
 
     
