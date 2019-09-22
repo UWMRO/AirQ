@@ -4,7 +4,7 @@ Naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
 
-Note: Will fail if the archive directory isn't already created, if there are blank lines in the 
+Note: Will fail if the archive directory isn't already created, if there are blank lines in the file input file.
 ToDo: Exceptions don't print or pass their exceptions up
 """
 
