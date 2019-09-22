@@ -4,7 +4,8 @@ Naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
 
-To-Do: Exceptions in objects should pass up their problem, not print...
+Note: Will fail if the archive directory isn't already created, if there are blank lines in the 
+ToDo: Exceptions don't print or pass their exceptions up
 """
 
 import os, shutil, subprocess, glob, time, sys
@@ -55,8 +56,8 @@ class WebCamHandler(object):
         
         self.archivePath = "/home/ojf/Pictures/MRO_Webcams/"
         self.remotePath = 'public_html/webcams/'
-        self.remoteHost = ''
-        self.user = ''
+        self.remoteHost = 'ovid.u.washington.edu'
+        self.user = 'mrouser'
         self.cameras = []  # list of all WebCam objects
 
         FILE = open(webcam_definition_file)
@@ -81,7 +82,7 @@ class WebCamHandler(object):
 
         for camera in self.cameras:
             camera.retrieve_image(path)
-            print "image archived from ", camera.name
+            print datetime.now().strftime("%m/%d %H:%M"), ": image archived from ", camera.name
 
 
     def post_images(self):
@@ -94,7 +95,7 @@ class WebCamHandler(object):
         for camera in self.cameras:
             if camera.lastImage:
                 sftp.put(camera.lastImage, self.remotePath + camera.name + ".jpg")
-                print "Posted image from", camera.name
+                print datetime.now().strftime("%m/%d %H:%M"), ": Posted image from", camera.name
         sftp.close()
         ssh.close()
 
