@@ -91,8 +91,8 @@ class Grove_Dust_Sensor
 Bounce Button = Bounce();
 Grove_Dust_Sensor dust1(DUST1PIN); 
 Grove_Dust_Sensor dust2(DUST2PIN); 
-Ewma FilterDust1(0.1);   // (0.1) = Less smoothing - faster to detect changes, but more prone to noise 
-Ewma FilterDust2(0.1);  // (0.01) = More smoothing - less prone to noise, but slower to detect changes
+Ewma SmoothedDust1(0.1);   // (0.1) = Less smoothing - faster to detect changes, but more prone to noise 
+Ewma SmoothedDust2(0.1);  // (0.01) = More smoothing - less prone to noise, but slower to detect changes
 
 
 //DHT dht(DHTPIN, DHT22);
@@ -177,8 +177,8 @@ void loop() {
   Serial.print(concentration);
   Serial.print(" (");
   Serial.print(dust1.sampletime);
-  Serial.print(" second sample). Filtered: ");
-  concentration = FilterDust1.filter(concentration);
+  Serial.print(" second sample). Running Average: ");
+  concentration = SmoothedDust1.filter(concentration);
   Serial.println(concentration);
   dust1feed.publish(concentration);
 
@@ -191,8 +191,8 @@ void loop() {
   Serial.print(concentration);
   Serial.print(" (");
   Serial.print(dust2.sampletime);
-  Serial.print(" second sample). Filtered: ");
-  concentration = FilterDust2.filter(concentration);
+  Serial.print(" second sample). Running Average: ");
+  concentration = SmoothedDust2.filter(concentration);
   Serial.println(concentration);
   dust2feed.publish(concentration);
   digitalWrite(BLUEPIN, HIGH);    // off
