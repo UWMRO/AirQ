@@ -1,5 +1,5 @@
 /* Ling Tsiang and Oliver Fraser
- * Air Quality Sensor v2.0
+ * Air Quality Sensor v2.1
  * w/ thanks to example Adafruit MQTT code
  * 
  * LED Status:
@@ -13,11 +13,11 @@
 
 // Timing
 #define FAN_TIME 30     // fan runtime in seconds
-#define SAMPLE_TIME 120  // time in seconds each sensor integrates for
+#define SAMPLE_TIME 30  // time in seconds each sensor integrates for
 #define WAIT_TIME 600   // time between samples
 
 // WiFi parameters
-#define WLAN_SSID       "University of Washington"
+#define WLAN_SSID       "University of Washington" // "University of Washington"
 #define WLAN_PASS       ""
 
 // Pin Definitions
@@ -41,6 +41,9 @@
 #include <WiFi.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+#include <Arduino.h>
+#include <Ewma.h>
+
 void mqtt_connect();
 
 
@@ -88,6 +91,10 @@ class Grove_Dust_Sensor
 Bounce Button = Bounce();
 Grove_Dust_Sensor dust1(DUST1PIN); 
 Grove_Dust_Sensor dust2(DUST2PIN); 
+Ewma FilterDust1(0.1);   // (0.1) = Less smoothing - faster to detect changes, but more prone to noise 
+Ewma FilterDust2(0.1);  // (0.01) = More smoothing - less prone to noise, but slower to detect changes
+
+
 //DHT dht(DHTPIN, DHT22);
 
 // Create an WiFiClient class to connect to the MQTT server, then setup the MQTT
@@ -170,8 +177,9 @@ void loop() {
   Serial.print(concentration);
   Serial.print(" (");
   Serial.print(dust1.sampletime);
-  Serial.println(" second sample)");
-  
+  Serial.print(" second sample). Filtered: ");
+  concentration = FilterDust1.filter(concentration);
+  Serial.println(concentration);
   dust1feed.publish(concentration);
 
   // red off, blue remains on for dust 2
@@ -183,7 +191,9 @@ void loop() {
   Serial.print(concentration);
   Serial.print(" (");
   Serial.print(dust2.sampletime);
-  Serial.println(" second sample)");
+  Serial.print(" second sample). Filtered: ");
+  concentration = FilterDust2.filter(concentration);
+  Serial.println(concentration);
   dust2feed.publish(concentration);
   digitalWrite(BLUEPIN, HIGH);    // off
 
