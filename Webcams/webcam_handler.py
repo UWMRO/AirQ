@@ -1,12 +1,13 @@
 #!/home/ojf/anaconda2/bin/python
 
-""" webcam_handler.py
+""" webcam_handler.py [camera definition file]
+
 Requests security camera images, archives them, and forwards the latest to remote server. 
 Naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
 
-Note: Will fail if the archive directory isn't already created, if there are blank lines in the file input file.
+Note: Will fail if the archive directory isn't already created, if there are blank lines in the file input file, if there isn't an input file! =)
 ToDo: Exceptions don't print or pass their exceptions up
 """
 
@@ -53,8 +54,7 @@ class WebCamHandler(object):
       name IP username password
     """
 
-    def __init__(self):
-        webcam_definition_file = "webcams.txt"
+    def __init__(self, webcam_definition_file):
         
         self.archivePath = "/home/ojf/Pictures/MRO_Webcams/"
         self.remotePath = 'public_html/webcams/'
@@ -104,8 +104,7 @@ class WebCamHandler(object):
 
     
 if __name__ == "__main__":
-    
-    wh = WebCamHandler()
+    wh = WebCamHandler(sys.argv[1])
 
     run = True
     while run == True:
