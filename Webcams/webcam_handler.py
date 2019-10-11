@@ -1,3 +1,5 @@
+#!/home/ojf/anaconda2/bin/python
+
 """ webcam_handler.py
 Requests security camera images, archives them, and forwards the latest to remote server. 
 Naming convention assumes images come in slower than once per second.
@@ -30,7 +32,7 @@ class WebCam:
         imagePath = savePath + "/" + self.name + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
         with open(imagePath, 'wb') as f:
             c = pycurl.Curl()
-            c.setopt( c.URL, self.URL + "/image/jpeg.cgi" )
+            c.setopt( c.URL, self.URL + "/dms?nowprofileid=2" )
             c.setopt( c.USERPWD, self.userName + ":" + self.password )
             c.setopt( c.WRITEDATA, f )
             try:
