@@ -28,12 +28,12 @@ class WebCam:
         
 
     def retrieve_image(self, savePath):
-        """ Uses http://IPAddress/image/jpeg.cgi to request current image, returns full path to new image. """
+        """ Request current image via http, returns full path to new image. """
 
         imagePath = savePath + "/" + self.name + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
         with open(imagePath, 'wb') as f:
             c = pycurl.Curl()
-            c.setopt( c.URL, self.URL + "/dms?nowprofileid=2" )
+            c.setopt( c.URL, self.URL + "/dms?nowprofileid=1" )
             c.setopt( c.USERPWD, self.userName + ":" + self.password )
             c.setopt( c.WRITEDATA, f )
             try:
