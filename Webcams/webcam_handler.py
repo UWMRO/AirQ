@@ -1,13 +1,16 @@
-#!/home/ojf/anaconda2/bin/python
-
 """ webcam_handler.py [camera definition file]
 
-Requests security camera images, archives them, and forwards the latest to remote server. 
+Requests and archives webcam images, then and forwards the latest to a remote server. 
+Uses Pycurl to retrieve images via http, Paramiko to push them to the server via ssh.
 Naming convention assumes images come in slower than once per second.
 
-Original by Matt Armstrong (~'17-'18), modified for direct access to webcams by OJF '19
+Original by Matt Armstrong (~'17-'18)
+modified for direct access to webcams by OJF '19
 
-Note: Will fail if the archive directory isn't already created, if there are blank lines in the file input file, if there isn't an input file! =)
+Note: Will fail if:
+- the archive directory doesn't exist
+- if the camera definition file has blank lines
+
 ToDo: Exceptions don't print or pass their exceptions up
 """
 
@@ -17,7 +20,7 @@ from paramiko import SSHClient
 from datetime import datetime
 
 class WebCam:
-    """ Object to represent one of the security cameras at MRO """
+    """ Object to represent one of the webcams at MRO """
 
     def __init__(self, name, URL, userName, password):
         self.name = name
@@ -28,7 +31,7 @@ class WebCam:
         
 
     def retrieve_image(self, savePath):
-        """ Request current image via http, returns full path to new image. """
+        """ Request (via http) and save current image. Returns full path to new image. """
 
         imagePath = savePath + "/" + self.name + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
         with open(imagePath, 'wb') as f:
@@ -39,7 +42,7 @@ class WebCam:
             try:
                 c.perform()
             except:
-                print "Error retrieving image from", self.name
+                print( "Error retrieving image from", self.name )
             else:
                 self.lastImage = imagePath
             c.close()
@@ -49,7 +52,7 @@ class WebCam:
 class WebCamHandler(object):
     """ Archive and post images to remote server from the MRO webcams.
 
-    Sets up WebCam objects based on a file of format,
+    Sets up WebCam objects based on a file of format:
 
       name IP username password
     """
@@ -68,7 +71,7 @@ class WebCamHandler(object):
                 continue
             self.cameras.append( WebCam(*line.split()) ) # *args "unwraps" the list from split()
         for camera in self.cameras:
-            print "Setting up camera", camera.name
+            print( "Setting up camera", camera.name )
 
 
     def retrieve_and_archive_images(self):
@@ -80,11 +83,11 @@ class WebCamHandler(object):
             try:
                 os.mkdir( path )
             except Exception as e:
-                print "Error creating ", path, ": ", e
+                print( "Error creating ", path, ": ", e )
 
         for camera in self.cameras:
             camera.retrieve_image(path)
-            print datetime.now().strftime("%m/%d %H:%M"), ": image archived from ", camera.name
+            print( datetime.now().strftime("%m/%d %H:%M"), ": image archived from ", camera.name )
 
 
     def post_images(self):
@@ -97,29 +100,35 @@ class WebCamHandler(object):
         for camera in self.cameras:
             if camera.lastImage:
                 sftp.put(camera.lastImage, self.remotePath + camera.name + ".jpg")
-                print datetime.now().strftime("%m/%d %H:%M"), ": Posted image from", camera.name
+                print( datetime.now().strftime("%m/%d %H:%M"), ": Posted image from", camera.name )
         sftp.close()
         ssh.close()
 
 
     
 if __name__ == "__main__":
-    wh = WebCamHandler(sys.argv[1])
 
-    run = True
-    while run == True:
+    try:
+        camera_definition_file = sys.argv[1]
+    except IndexError as e:
+        print( "Usage:", sys.argv[0], "[camera definition file]")
+        exit()
+
+    handler = WebCamHandler(sys.argv[1])
+
+    while True:
         try:
-            wh.retrieve_and_archive_images()
+            handler.retrieve_and_archive_images()
         except Exception as e:
-            print e
+            print( e )
         try:
-            wh.post_images()
+            handler.post_images()
         except Exception as e:
-            print e
+            print( e )
 
         for i in xrange(300,-1,-1):
             sys.stdout.write('\r')
             sys.stdout.write('Sleeping: %02d seconds remaining' %i)
             sys.stdout.flush()
             time.sleep(1)
-        print '\r\n'
+        print( '\r\n' )
