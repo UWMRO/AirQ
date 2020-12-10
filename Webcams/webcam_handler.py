@@ -34,7 +34,7 @@ class WebCam:
         self.userName = userName
         self.password = password
         self.lastImage = None
-        
+        + "/dms?nowprofileid=1" /img/snapshot.cgi?size=2
 
     def retrieve_image(self, savePath):
         """ Request (via http) and save current image. Returns full path to new image. """
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         except Exception as e:
             print( e )
 
-        for i in xrange(300,-1,-1):
+        for i in range(300,-1,-1):
             sys.stdout.write('\r')
             sys.stdout.write('Sleeping: %02d seconds remaining' %i)
             sys.stdout.flush()
