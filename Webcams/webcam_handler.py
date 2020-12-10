@@ -94,7 +94,7 @@ class WebCamHandler(object):
 
         for camera in self.cameras:
             camera.retrieve_image(path)
-            print( datetime.now().strftime("%m/%d %H:%M"), ": image archived from ", camera.name )
+            print( datetime.now().strftime("%m/%d %H:%M"), ": image archived from", camera.name )
 
 
     def post_images(self):
