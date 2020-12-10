@@ -34,7 +34,6 @@ class WebCam:
         self.userName = userName
         self.password = password
         self.lastImage = None
-        + "/dms?nowprofileid=1" /img/snapshot.cgi?size=2
 
     def retrieve_image(self, savePath):
         """ Request (via http) and save current image. Returns full path to new image. """
