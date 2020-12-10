@@ -2,7 +2,13 @@
 
 Requests and archives webcam images, then and forwards the latest to a remote server. 
 Uses Pycurl to retrieve images via http, Paramiko to push them to the server via ssh.
-Naming convention assumes images come in slower than once per second.
+
+Camera definition file format is:
+
+      name URL username password
+
+The URL is the specific call that returns a single image. Note that the
+naming convention assumes images come in slower than once per second.
 
 Original by Matt Armstrong (~'17-'18)
 modified for direct access to webcams by OJF '19
@@ -36,7 +42,7 @@ class WebCam:
         imagePath = savePath + "/" + self.name + "_" + datetime.now().strftime("%m%d_%H%M%S") + '.jpg'
         with open(imagePath, 'wb') as f:
             c = pycurl.Curl()
-            c.setopt( c.URL, self.URL + "/dms?nowprofileid=1" )
+            c.setopt( c.URL, self.URL)
             c.setopt( c.USERPWD, self.userName + ":" + self.password )
             c.setopt( c.WRITEDATA, f )
             try:
@@ -54,7 +60,9 @@ class WebCamHandler(object):
 
     Sets up WebCam objects based on a file of format:
 
-      name IP username password
+      name URL username password
+
+    where the URL returns a single image
     """
 
     def __init__(self, webcam_definition_file):
